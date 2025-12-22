@@ -1,0 +1,8 @@
+{
+  "name": "Khan Academy Nusantara",
+  "description": "Platform pendidikan digital komprehensif untuk jenjang SD, SMP, SMA, dan MAN di Indonesia, dilengkapi fitur AI Tutor dan manajemen kurikulum lengkap.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
