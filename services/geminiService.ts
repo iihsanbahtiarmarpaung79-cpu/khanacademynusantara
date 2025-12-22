@@ -1,8 +1,8 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Strictly initialize GoogleGenAI with named parameter using process.env.API_KEY
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Strictly initialize GoogleGenAI with named parameter using process.env.API_KEY || 'FAKE_API_KEY_FOR_DEVELOPMENT'
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || 'FAKE_API_KEY_FOR_DEVELOPMENT' });
 
 export const getAITutoring = async (topic: string, subject: string, level: string) => {
   try {
