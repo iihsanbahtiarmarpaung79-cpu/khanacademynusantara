@@ -86,25 +86,28 @@ const DashboardSiswa: React.FC<DashboardSiswaProps> = ({ user, activeTab, onTabC
     setContentTab(tab);
     setLoading(true);
 
-    try {
-      if (tab === 'Kuis') {
-        const questions = await generateQuizQuestions(`Topik Utama ${selectedSubject}`, selectedSubject);
-        setQuizQuestions(questions || []);
-        setCurrentQuestionIndex(0);
-        setUserAnswers([]);
-        setQuizFinished(false);
-      } else if (tab === 'Bacaan') {
-        const content = await generateReadingMaterial(selectedSubject, selectedSubject, user.jenjang);
-        setReadingContent(content || "Materi bacaan tidak tersedia.");
-      } else if (tab === 'Bedah') {
-        const content = await generateConceptDeepDive(selectedSubject, selectedSubject, user.jenjang);
-        setDeepDiveContent(content || "Gagal membedah materi.");
+    // Simulasi loading sebentar agar transisi tetap halus
+    setTimeout(async () => {
+      try {
+        if (tab === 'Kuis') {
+          const questions = await generateQuizQuestions(`Topik Utama ${selectedSubject}`, selectedSubject);
+          setQuizQuestions(questions || []);
+          setCurrentQuestionIndex(0);
+          setUserAnswers([]);
+          setQuizFinished(false);
+        } else if (tab === 'Bacaan') {
+          const content = await generateReadingMaterial(selectedSubject, selectedSubject, user.jenjang);
+          setReadingContent(content || "Materi bacaan tidak tersedia.");
+        } else if (tab === 'Bedah') {
+          const content = await generateConceptDeepDive(selectedSubject, selectedSubject, user.jenjang);
+          setDeepDiveContent(content || "Gagal membedah materi.");
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    }, 400);
   };
 
   const handleAnswer = (optionIndex: number) => {
@@ -175,12 +178,13 @@ const DashboardSiswa: React.FC<DashboardSiswaProps> = ({ user, activeTab, onTabC
   const handleAskAI = async () => {
     if (!activePost) return;
     setAiLoading(true);
+    // Masih menggunakan fungsi insight namun sekarang statis
     const insight = await getAIDiscussionInsight(activePost.topic, activePost.content);
     
     const aiReply: Reply = {
       id: Date.now(),
-      user: "AI Tutor Nusantara",
-      text: insight || "Maaf, saya tidak dapat merespon saat ini.",
+      user: "Moderator Nusantara",
+      text: insight || "Maaf, sedang terjadi gangguan sistem.",
       time: "Baru saja",
       isAI: true
     };
@@ -283,7 +287,7 @@ const DashboardSiswa: React.FC<DashboardSiswaProps> = ({ user, activeTab, onTabC
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-24 space-y-6">
                   <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                  <p className="text-slate-500 font-bold animate-pulse">Menyiapkan konten untuk Anda...</p>
+                  <p className="text-slate-500 font-bold animate-pulse">Menyiapkan konten Nusantara...</p>
                 </div>
               ) : contentTab === 'Video' ? (
                 <div className="space-y-8 animate-fadeIn">
@@ -294,7 +298,7 @@ const DashboardSiswa: React.FC<DashboardSiswaProps> = ({ user, activeTab, onTabC
                     <img src={`https://picsum.photos/seed/${selectedSubject}-video/1280/720`} className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-700" alt="Video Placeholder" />
                   </div>
                   <div className="p-8 bg-indigo-50 rounded-[2rem] border border-indigo-100">
-                    <h4 className="text-xl font-bold text-indigo-900 mb-2">Tentang Video Ini</h4>
+                    <h4 className="text-xl font-bold text-indigo-900 mb-2">Tentang Materi Ini</h4>
                     <p className="text-indigo-700 leading-relaxed">Video ini membahas dasar-dasar {selectedSubject} sesuai standar Kurikulum Merdeka. Tonton sampai selesai sebelum melanjutkan ke materi bacaan atau kuis.</p>
                   </div>
                 </div>
@@ -311,7 +315,7 @@ const DashboardSiswa: React.FC<DashboardSiswaProps> = ({ user, activeTab, onTabC
                       <span className="text-8xl text-white">🔬</span>
                     </div>
                     <div className="relative z-10 text-white prose prose-invert max-w-none leading-loose whitespace-pre-wrap font-medium">
-                      <h4 className="text-indigo-400 font-black uppercase tracking-widest text-xs mb-6">Deep Dive Analysis</h4>
+                      <h4 className="text-indigo-400 font-black uppercase tracking-widest text-xs mb-6">Analisis Konsep Nusantara</h4>
                       {deepDiveContent || "Sedang membedah konsep..."}
                     </div>
                   </div>
@@ -375,7 +379,7 @@ const DashboardSiswa: React.FC<DashboardSiswaProps> = ({ user, activeTab, onTabC
     );
   }
 
-  // PROGRESS TAB
+  // Progres Tab - Tetap sama namun dengan data statis
   if (activeTab === 'Progres') {
     return (
       <div className="space-y-10 animate-fadeIn pb-16">
@@ -436,28 +440,9 @@ const DashboardSiswa: React.FC<DashboardSiswaProps> = ({ user, activeTab, onTabC
                 Lihat Semua Mata Pelajaran
               </button>
             </div>
-            
-            {/* Study Activity Chart Mockup */}
-            <div className="bg-white p-8 md:p-10 rounded-[3rem] border border-slate-100 shadow-sm">
-               <h3 className="text-xl font-black text-slate-800 mb-8">Aktivitas Mingguan</h3>
-               <div className="flex items-end justify-between h-48 gap-2 px-4">
-                  {[45, 70, 30, 85, 60, 95, 40].map((h, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center group">
-                      <div className="w-full bg-indigo-100 group-hover:bg-indigo-600 rounded-t-xl transition-all duration-500 relative" style={{ height: `${h}%` }}>
-                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                          {h}m
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-black text-slate-400 mt-4 uppercase">
-                        {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'][i]}
-                      </span>
-                    </div>
-                  ))}
-               </div>
-            </div>
           </div>
 
-          {/* Right Sidebar - Badges & Recent */}
+          {/* Badges Section */}
           <div className="space-y-8">
             <div className="bg-slate-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 p-8 opacity-20 transform rotate-12">
@@ -474,25 +459,6 @@ const DashboardSiswa: React.FC<DashboardSiswaProps> = ({ user, activeTab, onTabC
                   <div key={i} className="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col items-center text-center">
                     <span className="text-3xl mb-2">{badge.icon}</span>
                     <span className="text-[10px] font-bold opacity-70">{badge.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
-              <h3 className="text-xl font-black text-slate-800 mb-6">Pencapaian Terakhir</h3>
-              <div className="space-y-6">
-                {[
-                  { text: 'Menyelesaikan kuis Matematika', time: '10m lalu', icon: '📝' },
-                  { text: 'Meraih lencana "7 Hari Beruntun"', time: '2j lalu', icon: '✨' },
-                  { text: 'Membaca materi Biologi Sel', time: '5j lalu', icon: '📚' },
-                ].map((act, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-lg">{act.icon}</div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-700 leading-tight">{act.text}</p>
-                      <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">{act.time}</p>
-                    </div>
                   </div>
                 ))}
               </div>
@@ -581,7 +547,7 @@ const DashboardSiswa: React.FC<DashboardSiswaProps> = ({ user, activeTab, onTabC
                   ) : (
                     <span>✨</span>
                   )}
-                  Tanya Wawasan AI
+                  Tanya Moderator
                 </button>
               </div>
 
@@ -612,48 +578,6 @@ const DashboardSiswa: React.FC<DashboardSiswaProps> = ({ user, activeTab, onTabC
                   </button>
                 </form>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Create Modal */}
-        {showCreateModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-            <div className="bg-white rounded-[3rem] p-10 max-w-2xl w-full shadow-2xl animate-scaleIn">
-              <div className="flex justify-between items-center mb-10">
-                <h3 className="text-3xl font-black text-slate-800">Buat Topik Baru</h3>
-                <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition-all">
-                  <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-              <form onSubmit={handleCreatePost} className="space-y-6">
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Judul Topik</label>
-                  <input 
-                    required 
-                    type="text" 
-                    value={newTopic.title}
-                    onChange={(e) => setNewTopic({...newTopic, title: e.target.value})}
-                    placeholder="Apa yang ingin Anda diskusikan?" 
-                    className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:ring-2 focus:ring-indigo-600 outline-none transition-all font-bold" 
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Isi Diskusi</label>
-                  <textarea 
-                    required 
-                    rows={5}
-                    value={newTopic.content}
-                    onChange={(e) => setNewTopic({...newTopic, content: e.target.value})}
-                    placeholder="Berikan detail penjelasan atau pertanyaan Anda..." 
-                    className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:ring-2 focus:ring-indigo-600 outline-none transition-all font-medium" 
-                  />
-                </div>
-                <div className="flex gap-4 pt-4">
-                  <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-4 font-bold text-slate-400">Batal</button>
-                  <button type="submit" className="flex-2 bg-indigo-600 text-white px-12 py-4 rounded-2xl font-bold shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all">Terbitkan Diskusi</button>
-                </div>
-              </form>
             </div>
           </div>
         )}
