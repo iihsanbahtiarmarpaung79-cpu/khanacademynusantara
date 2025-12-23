@@ -12,7 +12,7 @@ import Header from './components/Header';
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [activeTab, setActiveTab] = useState('Tentang Kami');
 
   useEffect(() => {
     const savedUser = localStorage.getItem('ka_user');
@@ -24,12 +24,24 @@ const App: React.FC = () => {
   const handleLogin = (user: User) => {
     setCurrentUser(user);
     localStorage.setItem('ka_user', JSON.stringify(user));
+    // Reset tab ke default saat login
+    setActiveTab('Tentang Kami');
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('ka_user');
-    setActiveTab('Dashboard');
+    setActiveTab('Tentang Kami');
+  };
+
+  const handleUpdateUser = (updatedUser: User) => {
+    setCurrentUser(updatedUser);
+    localStorage.setItem('ka_user', JSON.stringify(updatedUser));
+    
+    // Update juga di daftar user global
+    const allUsers = JSON.parse(localStorage.getItem('ka_all_users') || '[]');
+    const updatedAllUsers = allUsers.map((u: User) => u.id === updatedUser.id ? updatedUser : u);
+    localStorage.setItem('ka_all_users', JSON.stringify(updatedAllUsers));
   };
 
   if (!currentUser) {
@@ -40,57 +52,55 @@ const App: React.FC = () => {
   }
 
   const renderContent = () => {
-    // Definisi grup tab
-    const studentFeatures = ['Materi', 'Kuis', 'Progres', 'Profil', 'Forum', 'Pengaturan'];
-    const teacherFeatures = ['Kelola Materi', 'Kelola Kuis', 'Siswa Online', 'Laporan'];
-    const adminFeatures = ['Kelola User', 'Kelola Pelajaran', 'Monitoring', 'Sistem'];
-
     const commonProps = {
       user: currentUser,
       activeTab: activeTab,
-      onTabChange: setActiveTab
+      onTabChange: setActiveTab,
+      onUpdateUser: handleUpdateUser
     };
 
-    // Dashboard utama tetap spesifik per role
-    if (activeTab === 'Dashboard') {
-      if (currentUser.role === 'Admin') return <DashboardAdmin {...commonProps} />;
-      if (currentUser.role === 'Guru') return <DashboardGuru {...commonProps} />;
-      return <DashboardSiswa {...commonProps} />;
-    }
-
-    // Jika Admin, dia bisa akses semua grup fitur
+    // Routing Berdasarkan Role
     if (currentUser.role === 'Admin') {
-      if (studentFeatures.includes(activeTab)) return <DashboardSiswa {...commonProps} />;
-      if (teacherFeatures.includes(activeTab)) return <DashboardGuru {...commonProps} />;
-      if (adminFeatures.includes(activeTab)) return <DashboardAdmin {...commonProps} />;
-    }
-
-    // Perutean normal untuk Guru & Siswa
-    if (studentFeatures.includes(activeTab)) {
-      return <DashboardSiswa {...commonProps} />;
-    }
-    
-    if (teacherFeatures.includes(activeTab)) {
-      return <DashboardGuru {...commonProps} />;
-    }
-
-    if (adminFeatures.includes(activeTab)) {
+      const adminTabs = ['Kelola User', 'Monitoring', 'Dashboard', 'Tentang Kami', 'Profil', 'Pengaturan'];
+      if (adminTabs.includes(activeTab)) return <DashboardAdmin {...commonProps} />;
+      // Admin bisa akses dashboard lain untuk monitoring
+      if (['Materi', 'Kuis', 'Progres', 'Forum'].includes(activeTab)) return <DashboardSiswa {...commonProps} />;
+      if (['Kelola Materi', 'Kelola Kuis', 'Siswa Online'].includes(activeTab)) return <DashboardGuru {...commonProps} />;
       return <DashboardAdmin {...commonProps} />;
     }
 
+    if (currentUser.role === 'Guru') {
+      const guruTabs = ['Kelola Materi', 'Kelola Kuis', 'Siswa Online', 'Tentang Kami', 'Profil', 'Pengaturan', 'Hubungi Admin'];
+      if (guruTabs.includes(activeTab)) return <DashboardGuru {...commonProps} />;
+      return <DashboardGuru {...commonProps} />;
+    }
+
+    // Default Siswa
     return <DashboardSiswa {...commonProps} />;
   };
 
-  const mobileNavItems = [
-    { name: 'Dashboard', icon: '🏠' },
+  const mobileNavItems = currentUser.role === 'Siswa' ? [
+    { name: 'Tentang Kami', icon: '🏠' },
     { name: 'Materi', icon: '📚' },
     { name: 'Kuis', icon: '📝' },
-    { name: 'Forum', icon: '💬' },
-    { name: 'Pengaturan', icon: '⚙️' }
+    { name: 'Progres', icon: '📈' },
+    { name: 'Hubungi Admin', icon: '📱' }
+  ] : currentUser.role === 'Guru' ? [
+    { name: 'Tentang Kami', icon: '🏠' },
+    { name: 'Kelola Materi', icon: '🛠️' },
+    { name: 'Siswa Online', icon: '👥' },
+    { name: 'Profil', icon: '👤' },
+    { name: 'Hubungi Admin', icon: '📱' }
+  ] : [
+    { name: 'Tentang Kami', icon: '🏠' },
+    { name: 'Kelola User', icon: '👥' },
+    { name: 'Monitoring', icon: '🖥️' },
+    { name: 'Profil', icon: '👤' },
+    { name: 'Hubungi Admin', icon: '📱' }
   ];
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
       <Sidebar 
         role={currentUser.role} 
         activeTab={activeTab} 
@@ -99,26 +109,26 @@ const App: React.FC = () => {
       />
       
       <div className="flex-1 flex flex-col overflow-hidden pb-16 md:pb-0">
-        <Header user={currentUser} />
+        <Header user={currentUser} onTabChange={setActiveTab} />
         
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 no-scrollbar scroll-smooth">
           {renderContent()}
         </main>
 
-        {/* Bottom Navigation for Mobile */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-16 px-2 z-50">
+        {/* Mobile Navigation */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 glass-effect border-t border-slate-200/50 flex justify-around items-center h-16 px-2 z-50 mobile-nav-hide-landscape shadow-2xl">
           {mobileNavItems.map(item => (
             <button
               key={item.name}
               onClick={() => setActiveTab(item.name)}
-              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
-                activeTab === item.name ? 'text-indigo-600' : 'text-slate-400'
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all group ${
+                activeTab === item.name ? 'text-indigo-600 scale-105' : 'text-slate-400'
               }`}
             >
-              <span className="text-xl mb-0.5">{item.icon}</span>
-              <span className={`text-[10px] font-bold uppercase tracking-tight ${
+              <span className={`text-xl mb-0.5 transition-transform group-active:scale-125 ${activeTab === item.name ? 'scale-110' : ''}`}>{item.icon}</span>
+              <span className={`text-[8px] font-black uppercase tracking-tight transition-all truncate max-w-full ${
                 activeTab === item.name ? 'opacity-100' : 'opacity-60'
-              }`}>{item.name}</span>
+              }`}>{item.name.split(' ')[0]}</span>
             </button>
           ))}
         </div>

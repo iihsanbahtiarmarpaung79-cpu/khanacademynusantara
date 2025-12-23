@@ -4,9 +4,10 @@ import { User } from '../types';
 
 interface HeaderProps {
   user: User;
+  onTabChange?: (tab: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ user }) => {
+const Header: React.FC<HeaderProps> = ({ user, onTabChange }) => {
   return (
     <header className="h-24 glass-effect border-b border-slate-200/50 px-8 md:px-12 flex items-center justify-between sticky top-0 z-30">
       <div className="flex items-center gap-12 flex-1">
@@ -21,7 +22,6 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
           </svg>
         </div>
 
-        {/* Global Progress - Just for decoration/visual enhancement */}
         <div className="hidden xl:flex items-center gap-4 border-l border-slate-200 pl-12">
            <div className="text-right">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Target Harian</p>
@@ -36,7 +36,9 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
       <div className="flex items-center gap-6">
         <div className="text-right hidden sm:block">
           <p className="text-sm font-black text-slate-900 tracking-tight">{user.fullName}</p>
-          <p className="text-[10px] text-indigo-500 font-black uppercase tracking-widest mt-0.5">{user.role} • {user.jenjang}</p>
+          <p className="text-[10px] text-indigo-500 font-black uppercase tracking-widest mt-0.5">
+            {user.kelas} {user.jurusan ? `(${user.jurusan})` : ''} • {user.schoolName}
+          </p>
         </div>
         
         <div className="relative group cursor-pointer">
@@ -49,10 +51,23 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
           </div>
           <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-4 border-white rounded-full shadow-sm"></div>
           
-          {/* Profile Dropdown Hover Effect (Visual Only) */}
-          <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-             <button className="w-full text-left px-4 py-2 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600">Lihat Profil</button>
-             <button className="w-full text-left px-4 py-2 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600">Notifikasi</button>
+          <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+             <div className="mb-2 px-2 pb-2 border-b border-slate-50">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sekolah</p>
+                <p className="text-xs font-bold text-slate-700 truncate">{user.schoolName}</p>
+             </div>
+             <button 
+               onClick={() => onTabChange?.('Profil')}
+               className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600 transition-colors"
+             >
+               Lihat Profil
+             </button>
+             <button 
+               onClick={() => onTabChange?.('Pengaturan')}
+               className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600 transition-colors"
+             >
+               Pengaturan
+             </button>
           </div>
         </div>
       </div>

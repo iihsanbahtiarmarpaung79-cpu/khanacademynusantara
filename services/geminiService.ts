@@ -1,132 +1,148 @@
 
-// File ini sekarang berfungsi sebagai penyedia data statis (Bank Materi & Kuis)
-// Menggantikan fungsi AI sebelumnya untuk stabilitas dan kecepatan akses.
+import { GoogleGenAI, Type } from "@google/genai";
 
-export const getAITutoring = async (topic: string, subject: string, level: string) => {
-  return `Penjelasan mendalam tentang ${topic} (${subject}) sedang dalam proses penyusunan oleh tim kurikulum pusat.`;
+// Inisialisasi AI secara global untuk digunakan dalam layanan
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+export interface GeneratedContent {
+  id: string;
+  subject: string;
+  topic: string;
+  level: string;
+  kelas: string;
+  material: string;
+  quiz: {
+    text: string;
+    options: string[];
+    correctAnswer: number;
+  }[];
+  createdAt: number;
+}
+
+/**
+ * Menyimpan konten ke library lokal untuk caching
+ */
+export const saveContentToLibrary = (content: GeneratedContent) => {
+  try {
+    const library = JSON.parse(localStorage.getItem('ka_library') || '[]');
+    // Hapus versi lama jika ada untuk subjek dan kelas yang sama
+    const filtered = library.filter((c: GeneratedContent) => 
+      !(c.subject.toLowerCase() === content.subject.toLowerCase() && 
+        c.kelas === content.kelas && 
+        c.level === content.level)
+    );
+    filtered.push(content);
+    // Batasi cache hingga 20 materi terakhir agar storage tidak penuh
+    if (filtered.length > 20) filtered.shift();
+    localStorage.setItem('ka_library', JSON.stringify(filtered));
+  } catch (e) {
+    console.error("Gagal menyimpan ke cache:", e);
+  }
 };
 
-export const getAIDiscussionInsight = async (topic: string, content: string) => {
-  return "Terima kasih atas diskusinya! Fokus pada poin utama kurikulum merdeka adalah pemahaman konsep secara mandiri dan kolaboratif.";
+/**
+ * Mengambil konten yang sudah ada dari library lokal
+ */
+export const getContentForStudent = (subject: string, level: string, kelas: string): GeneratedContent | null => {
+  try {
+    const library = JSON.parse(localStorage.getItem('ka_library') || '[]');
+    return library.find((c: GeneratedContent) => 
+      c.subject.toLowerCase() === subject.toLowerCase() && 
+      c.level === level && 
+      c.kelas === kelas
+    ) || null;
+  } catch (e) {
+    return null;
+  }
 };
 
-// Bank Data Bacaan Statis
-const READING_BANK: Record<string, string> = {
-  "Matematika": `## Pendahuluan
-Matematika bukan sekadar angka, melainkan bahasa logika untuk memahami alam semesta. Di Kurikulum Merdeka, kita fokus pada pemecahan masalah nyata.
+/**
+ * Fungsi utama untuk menghasilkan konten edukasi mendalam menggunakan Gemini 3 Pro
+ */
+export const generateEducationContent = async (topic: string, subject: string, level: string, kelas: string): Promise<GeneratedContent> => {
+  const systemInstruction = `Anda adalah Pakar Kurikulum Merdeka Kemdikbudristek RI dengan gelar Profesor Pendidikan. 
+  Tugas Anda adalah merancang modul pembelajaran Nusantara yang prestisius.
+  Materi harus mendalam, menggunakan bahasa Indonesia yang formal namun inspiratif.
+  Kuis harus menantang dan mencakup soal HOTS (Higher Order Thinking Skills).`;
 
-## Konsep Utama
-1. **Logika Numerasi**: Kemampuan mengolah data untuk pengambilan keputusan.
-2. **Aljabar**: Memahami pola dan hubungan antar variabel.
-3. **Geometri**: Penguasaan ruang dan bentuk dalam arsitektur.
+  const prompt = `Buatlah Modul Pembelajaran Lengkap untuk:
+  - Mata Pelajaran: ${subject}
+  - Topik: ${topic}
+  - Jenjang: ${level} (${kelas})
 
-## Contoh Kasus di Indonesia
-Perhitungan pembagian waris atau zakat menggunakan prinsip matematika, serta desain motif batik yang menggunakan pola fraktal geometri.
+  WAJIB MEMENUHI KRITERIA:
+  1. MATERI: Tulis minimal 1000 kata dalam format Markdown. Gunakan struktur: ## Pendahuluan, ## Pembahasan Mendalam (analisis konsep), ## Relevansi di Indonesia (konteks lokal), ## Rangkuman & Kesimpulan.
+  2. KUIS: Buat tepat 30 soal pilihan ganda (A, B, C, D).
+     - 10 Soal Level Mudah (Ingatan/Pemahaman)
+     - 10 Soal Level Sedang (Aplikasi/Analisis)
+     - 10 Soal Level HOTS (Evaluasi/Kreasi)
+  
+  Format output HARUS JSON murni sesuai schema.`;
 
-## Kesimpulan
-Menguasai matematika berarti menguasai cara berpikir sistematis yang sangat dibutuhkan di era digital.`,
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview', // Menggunakan Pro untuk tugas kompleks
+      contents: prompt,
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        thinkingConfig: { thinkingBudget: 4000 }, // Memberi ruang berpikir untuk soal HOTS
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            material: { 
+              type: Type.STRING,
+              description: "Materi lengkap dalam format Markdown minimal 1000 kata."
+            },
+            quiz: {
+              type: Type.ARRAY,
+              description: "Daftar 30 soal pilihan ganda.",
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  text: { type: Type.STRING },
+                  options: { 
+                    type: Type.ARRAY, 
+                    items: { type: Type.STRING },
+                    minItems: 4,
+                    maxItems: 4
+                  },
+                  correctAnswer: { 
+                    type: Type.INTEGER,
+                    description: "Index jawaban benar (0-3)"
+                  }
+                },
+                required: ["text", "options", "correctAnswer"]
+              }
+            }
+          },
+          required: ["material", "quiz"]
+        }
+      }
+    });
 
-  "Fisika": `## Pendahuluan
-Fisika mempelajari materi dan energinya melalui ruang dan waktu. Kita belajar bagaimana alam semesta berperilaku.
+    const textOutput = response.text;
+    if (!textOutput) throw new Error("AI tidak memberikan respon teks.");
 
-## Konsep Utama
-1. **Mekanika**: Hukum gerak Newton yang mendasari transportasi.
-2. **Termodinamika**: Perpindahan panas dan energi.
-3. **Listrik & Magnet**: Dasar dari teknologi elektronik modern.
+    const result = JSON.parse(textOutput);
+    
+    // Pastikan jumlah soal tepat 30, jika kurang/lebih tetap diterima namun idealnya 30
+    console.log(`Berhasil men-generate ${result.quiz.length} soal.`);
 
-## Contoh Kasus di Indonesia
-Pemanfaatan panel surya di daerah pesisir Indonesia dan prinsip aerodinamika pada pembuatan pesawat N-250 karya BJ Habibie.
-
-## Kesimpulan
-Fisika memberikan jawaban atas fenomena alam di sekitar kita melalui eksperimen dan pembuktian matematis.`,
-
-  "Biologi": `## Pendahuluan
-Biologi adalah ilmu tentang kehidupan. Indonesia sebagai negara megabiodiversitas adalah laboratorium biologi terbesar di dunia.
-
-## Konsep Utama
-1. **Sel**: Unit terkecil penyusun makhluk hidup.
-2. **Genetika**: Pewarisan sifat dan evolusi.
-3. **Ekosistem**: Hubungan timbal balik antara makhluk hidup dan lingkungan.
-
-## Contoh Kasus di Indonesia
-Konservasi badak bercula satu di Ujung Kulon dan pemanfaatan tanaman herbal tradisional (Jamu) sebagai obat alami.
-
-## Kesimpulan
-Memahami biologi membantu kita menjaga kelestarian alam Nusantara demi masa depan generasi mendatang.`,
-
-  "Default": `Materi bacaan untuk mata pelajaran ini sedang dalam tahap digitalisasi. Silakan cek kembali dalam waktu dekat untuk konten lengkap sesuai Kurikulum Merdeka.`
-};
-
-export const generateReadingMaterial = async (topic: string, subject: string, level: string) => {
-  // Mencari materi berdasarkan subject atau fallback ke default
-  const subjectKey = Object.keys(READING_BANK).find(k => subject.includes(k)) || "Default";
-  return READING_BANK[subjectKey];
-};
-
-export const generateConceptDeepDive = async (topic: string, subject: string, level: string) => {
-  return `### Mengapa ${topic} itu Penting?
-Memahami konsep ini adalah pondasi untuk bab-bab selanjutnya. Dalam dunia nyata, ini digunakan oleh para profesional untuk menyelesaikan masalah kompleks secara efisien.
-
-### Analogi Sederhana
-Bayangkan konsep ini seperti membangun sebuah pondasi rumah; jika pondasinya kuat, maka seluruh bangunan di atasnya akan kokoh menghadapi badai ujian.
-
-### Kesalahan Umum Siswa
-Siswa seringkali hanya menghafal rumus tanpa mengerti kenapa rumus itu ada. Pastikan kamu memahami logika di baliknya!`;
-};
-
-// Bank Data Kuis Statis
-const QUIZ_BANK: Record<string, any[]> = {
-  "Matematika": [
-    {
-      id: "q1",
-      text: "Manakah yang merupakan hasil dari perkalian 12 x 12?",
-      options: ["124", "144", "164", "184"],
-      correctAnswer: 1
-    },
-    {
-      id: "q2",
-      text: "Berapakah nilai x jika 2x + 5 = 15?",
-      options: ["5", "10", "15", "20"],
-      correctAnswer: 0
-    },
-    {
-      id: "q3",
-      text: "Pola bilangan 2, 4, 8, 16... selanjutnya adalah?",
-      options: ["24", "30", "32", "36"],
-      correctAnswer: 2
+    return {
+      ...result,
+      id: `MOD-${Math.random().toString(36).substr(2, 7).toUpperCase()}`,
+      subject,
+      topic,
+      level,
+      kelas,
+      createdAt: Date.now()
+    };
+  } catch (error: any) {
+    console.error("Gemini Generation Error:", error);
+    if (error.message?.includes("API key")) {
+      throw new Error("Kunci API AI Studio tidak valid atau belum dikonfigurasi di Netlify.");
     }
-  ],
-  "Fisika": [
-    {
-      id: "f1",
-      text: "Satuan internasional untuk massa adalah?",
-      options: ["Gram", "Kilogram", "Newton", "Pascal"],
-      correctAnswer: 1
-    },
-    {
-      id: "f2",
-      text: "Siapakah ilmuwan yang menemukan hukum gravitasi?",
-      options: ["Albert Einstein", "Nicola Tesla", "Isaac Newton", "Marie Curie"],
-      correctAnswer: 2
-    }
-  ],
-  "Default": [
-    {
-      id: "d1",
-      text: "Siapakah Bapak Proklamator Indonesia?",
-      options: ["Soeharto", "Soekarno", "BJ Habibie", "Abdurrahman Wahid"],
-      correctAnswer: 1
-    },
-    {
-      id: "d2",
-      text: "Apa lambang negara Indonesia?",
-      options: ["Padi dan Kapas", "Bintang", "Garuda Pancasila", "Rantai"],
-      correctAnswer: 2
-    }
-  ]
-};
-
-export const generateQuizQuestions = async (topic: string, subject: string) => {
-  const subjectKey = Object.keys(QUIZ_BANK).find(k => subject.includes(k)) || "Default";
-  return QUIZ_BANK[subjectKey];
+    throw new Error(`Gagal menyusun modul ${subject}. Silakan coba beberapa saat lagi.`);
+  }
 };

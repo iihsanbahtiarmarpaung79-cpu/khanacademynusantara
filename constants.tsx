@@ -23,6 +23,7 @@ export const SUBJECT_META: Record<string, { icon: string, color: string }> = {
   "Ekonomi": { icon: "📈", color: "bg-amber-600" },
   "Sejarah": { icon: "🏛️", color: "bg-stone-600" },
   "Pendidikan Agama": { icon: "🕌", color: "bg-teal-600" },
+  "Fiqih": { icon: "🕋", color: "bg-emerald-700" },
   "Bahasa Inggris": { icon: "🇬🇧", color: "bg-indigo-400" },
   "Default": { icon: "📚", color: "bg-indigo-600" }
 };
@@ -53,14 +54,14 @@ export const CURRICULUM: Record<Jenjang, any> = {
     }
   },
   MAN: {
-    "Kelas 10": ["Matematika", "Bahasa Indonesia", "Bahasa Inggris", "Fikih & Logika", "Informatika", "Sejarah Islam", "Pendidikan Pancasila", "Pendidikan Agama", "Logika", "PJOK", "Seni Budaya"],
+    "Kelas 10": ["Matematika", "Bahasa Indonesia", "Bahasa Inggris", "Fiqih", "Informatika", "Sejarah Islam", "Pendidikan Pancasila", "Pendidikan Agama", "Logika", "PJOK", "Seni Budaya"],
     "Kelas 11": {
-      "IPA": ["Matematika", "Fisika", "Kimia", "Biologi", "Sains Terapan", "Statistika", "Informatika", "Bahasa Indonesia", "Bahasa Inggris", "Pendidikan Agama", "Metodologi Ilmiah"],
-      "IPS": ["Matematika", "Ekonomi", "Geografi", "Sosiologi", "Sejarah", "Akuntansi", "Analisis Sosial", "Informatika", "Bahasa Indonesia", "Bahasa Inggris", "Pendidikan Agama"]
+      "IPA": ["Matematika", "Fisika", "Kimia", "Biologi", "Fiqih", "Sains Terapan", "Statistika", "Informatika", "Bahasa Indonesia", "Bahasa Inggris", "Pendidikan Agama", "Metodologi Ilmiah"],
+      "IPS": ["Matematika", "Ekonomi", "Geografi", "Sosiologi", "Sejarah", "Akuntansi", "Fiqih", "Analisis Sosial", "Informatika", "Bahasa Indonesia", "Bahasa Inggris", "Pendidikan Agama"]
     },
     "Kelas 12": {
-      "IPA": ["Matematika", "Fisika", "Kimia", "Biologi", "Informatika Lanjut", "Statistika", "Pemrograman", "Bahasa Indonesia", "Bahasa Inggris", "Pendidikan Agama", "Persiapan PTN"],
-      "IPS": ["Matematika", "Ekonomi", "Geografi", "Sosiologi", "Sejarah", "Akuntansi", "Etika Sosial", "Bahasa Indonesia", "Bahasa Inggris", "Pendidikan Agama", "Persiapan PTN"]
+      "IPA": ["Matematika", "Fisika", "Kimia", "Biologi", "Fiqih", "Informatika Lanjut", "Statistika", "Pemrograman", "Bahasa Indonesia", "Bahasa Inggris", "Pendidikan Agama", "Persiapan PTN"],
+      "IPS": ["Matematika", "Ekonomi", "Geografi", "Sosiologi", "Sejarah", "Akuntansi", "Fiqih", "Etika Sosial", "Bahasa Indonesia", "Bahasa Inggris", "Pendidikan Agama", "Persiapan PTN"]
     }
   }
 };
@@ -68,5 +69,5 @@ export const CURRICULUM: Record<Jenjang, any> = {
 export const ADMIN_INFO = {
   name: "Fadel Aqram Marpaung",
   role: "Founder & Super Admin",
-  whatsapp: "0882277930100"
+  whatsapp: "088227790100"
 };

@@ -12,31 +12,40 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, onTabChange, onLogout }) => {
   const sections = [
     {
-      title: 'Utama',
+      title: 'Informasi Utama',
       items: [
-        { name: 'Dashboard', icon: '🏠' },
-        { name: 'Profil', icon: '👤' },
-        { name: 'Forum', icon: '💬' }
+        { name: 'Tentang Kami', icon: '🏠' },
+        { name: 'Hubungi Admin', icon: '📱' },
+        { name: 'Profil', icon: '👤' }
       ],
       roles: ['Siswa', 'Guru', 'Admin']
     },
     {
-      title: 'Belajar',
+      title: 'Akademik',
       items: [
         { name: 'Materi', icon: '📚' },
         { name: 'Kuis', icon: '📝' },
-        { name: 'Progres', icon: '📈' }
+        { name: 'Progres', icon: '📈' },
+        { name: 'Forum', icon: '💬' }
       ],
       roles: ['Siswa', 'Admin']
     },
     {
-      title: 'Pengajaran',
+      title: 'Manajemen',
       items: [
         { name: 'Kelola Materi', icon: '🛠️' },
         { name: 'Kelola Kuis', icon: '📋' },
         { name: 'Siswa Online', icon: '👥' }
       ],
       roles: ['Guru', 'Admin']
+    },
+    {
+      title: 'Founder',
+      items: [
+        { name: 'Laporan', icon: '🚩' },
+        { name: 'Monitoring', icon: '🖥️' }
+      ],
+      roles: ['Admin']
     }
   ];
 
