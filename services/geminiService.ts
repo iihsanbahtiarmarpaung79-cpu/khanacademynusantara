@@ -1,8 +1,10 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Inisialisasi AI secara global untuk digunakan dalam layanan
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Fungsi helper untuk mendapatkan instance AI dengan API Key terbaru
+const getAIInstance = () => {
+  const apiKey = process.env.API_KEY;
+  return new GoogleGenAI({ apiKey: apiKey || "" });
+};
 
 export interface GeneratedContent {
   id: string;
@@ -25,14 +27,12 @@ export interface GeneratedContent {
 export const saveContentToLibrary = (content: GeneratedContent) => {
   try {
     const library = JSON.parse(localStorage.getItem('ka_library') || '[]');
-    // Hapus versi lama jika ada untuk subjek dan kelas yang sama
     const filtered = library.filter((c: GeneratedContent) => 
       !(c.subject.toLowerCase() === content.subject.toLowerCase() && 
         c.kelas === content.kelas && 
         c.level === content.level)
     );
     filtered.push(content);
-    // Batasi cache hingga 20 materi terakhir agar storage tidak penuh
     if (filtered.length > 20) filtered.shift();
     localStorage.setItem('ka_library', JSON.stringify(filtered));
   } catch (e) {
@@ -60,6 +60,8 @@ export const getContentForStudent = (subject: string, level: string, kelas: stri
  * Fungsi utama untuk menghasilkan konten edukasi mendalam menggunakan Gemini 3 Pro
  */
 export const generateEducationContent = async (topic: string, subject: string, level: string, kelas: string): Promise<GeneratedContent> => {
+  const ai = getAIInstance();
+  
   const systemInstruction = `Anda adalah Pakar Kurikulum Merdeka Kemdikbudristek RI dengan gelar Profesor Pendidikan. 
   Tugas Anda adalah merancang modul pembelajaran Nusantara yang prestisius.
   Materi harus mendalam, menggunakan bahasa Indonesia yang formal namun inspiratif.
@@ -81,12 +83,12 @@ export const generateEducationContent = async (topic: string, subject: string, l
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Menggunakan Pro untuk tugas kompleks
+      model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
         systemInstruction,
         responseMimeType: "application/json",
-        thinkingConfig: { thinkingBudget: 4000 }, // Memberi ruang berpikir untuk soal HOTS
+        thinkingConfig: { thinkingBudget: 4000 },
         responseSchema: {
           type: Type.OBJECT,
           properties: {
@@ -126,9 +128,6 @@ export const generateEducationContent = async (topic: string, subject: string, l
 
     const result = JSON.parse(textOutput);
     
-    // Pastikan jumlah soal tepat 30, jika kurang/lebih tetap diterima namun idealnya 30
-    console.log(`Berhasil men-generate ${result.quiz.length} soal.`);
-
     return {
       ...result,
       id: `MOD-${Math.random().toString(36).substr(2, 7).toUpperCase()}`,
@@ -140,8 +139,8 @@ export const generateEducationContent = async (topic: string, subject: string, l
     };
   } catch (error: any) {
     console.error("Gemini Generation Error:", error);
-    if (error.message?.includes("API key")) {
-      throw new Error("Kunci API AI Studio tidak valid atau belum dikonfigurasi di Netlify.");
+    if (!process.env.API_KEY) {
+      throw new Error("API_KEY belum dikonfigurasi di variabel lingkungan Netlify.");
     }
     throw new Error(`Gagal menyusun modul ${subject}. Silakan coba beberapa saat lagi.`);
   }
