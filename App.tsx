@@ -13,18 +13,21 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [activeTab, setActiveTab] = useState('Tentang Kami');
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('ka_user');
     if (savedUser) {
       setCurrentUser(JSON.parse(savedUser));
     }
+    // Simulasi inisialisasi modul sistem
+    const timer = setTimeout(() => setIsInitializing(false), 800);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
     localStorage.setItem('ka_user', JSON.stringify(user));
-    // Reset tab ke default saat login
     setActiveTab('Tentang Kami');
   };
 
@@ -37,12 +40,14 @@ const App: React.FC = () => {
   const handleUpdateUser = (updatedUser: User) => {
     setCurrentUser(updatedUser);
     localStorage.setItem('ka_user', JSON.stringify(updatedUser));
-    
-    // Update juga di daftar user global
     const allUsers = JSON.parse(localStorage.getItem('ka_all_users') || '[]');
     const updatedAllUsers = allUsers.map((u: User) => u.id === updatedUser.id ? updatedUser : u);
     localStorage.setItem('ka_all_users', JSON.stringify(updatedAllUsers));
   };
+
+  if (isInitializing) {
+    return null; // Biarkan Splash Screen di index.html yang bekerja
+  }
 
   if (!currentUser) {
     if (isRegistering) {
@@ -59,23 +64,18 @@ const App: React.FC = () => {
       onUpdateUser: handleUpdateUser
     };
 
-    // Routing Berdasarkan Role
     if (currentUser.role === 'Admin') {
       const adminTabs = ['Kelola User', 'Monitoring', 'Dashboard', 'Tentang Kami', 'Profil', 'Pengaturan'];
       if (adminTabs.includes(activeTab)) return <DashboardAdmin {...commonProps} />;
-      // Admin bisa akses dashboard lain untuk monitoring
       if (['Materi', 'Kuis', 'Progres', 'Forum'].includes(activeTab)) return <DashboardSiswa {...commonProps} />;
       if (['Kelola Materi', 'Kelola Kuis', 'Siswa Online'].includes(activeTab)) return <DashboardGuru {...commonProps} />;
       return <DashboardAdmin {...commonProps} />;
     }
 
     if (currentUser.role === 'Guru') {
-      const guruTabs = ['Kelola Materi', 'Kelola Kuis', 'Siswa Online', 'Tentang Kami', 'Profil', 'Pengaturan', 'Hubungi Admin'];
-      if (guruTabs.includes(activeTab)) return <DashboardGuru {...commonProps} />;
       return <DashboardGuru {...commonProps} />;
     }
 
-    // Default Siswa
     return <DashboardSiswa {...commonProps} />;
   };
 
@@ -100,7 +100,7 @@ const App: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans animate-fadeIn">
       <Sidebar 
         role={currentUser.role} 
         activeTab={activeTab} 
@@ -112,10 +112,11 @@ const App: React.FC = () => {
         <Header user={currentUser} onTabChange={setActiveTab} />
         
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 no-scrollbar scroll-smooth">
-          {renderContent()}
+          <div className="animate-scaleIn">
+            {renderContent()}
+          </div>
         </main>
 
-        {/* Mobile Navigation */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 glass-effect border-t border-slate-200/50 flex justify-around items-center h-16 px-2 z-50 mobile-nav-hide-landscape shadow-2xl">
           {mobileNavItems.map(item => (
             <button

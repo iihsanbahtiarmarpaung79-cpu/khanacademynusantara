@@ -57,6 +57,9 @@
         @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .animate-scaleIn { animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
+        @keyframes pulse-gentle { 0%, 100% { transform: scale(1) rotate(3deg); } 50% { transform: scale(1.05) rotate(5deg); } }
+        .animate-pulse-gentle { animation: pulse-gentle 2s ease-in-out infinite; }
+
         .prose pre {
             white-space: pre-wrap !important;
             word-break: break-word !important;
@@ -67,16 +70,38 @@
             font-size: 1rem !important;
         }
 
-        #root:empty::before {
-            content: "Memuat Nusantara...";
+        /* Splash Screen styling */
+        #splash-screen {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-weight: 800;
-            color: #4f46e5;
-            letter-spacing: -0.05em;
-            font-size: 1.5rem;
+            inset: 0;
+            background: #F8FAFC;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out, visibility 0.5s;
+        }
+        .loader-bar {
+            width: 200px;
+            height: 4px;
+            background: #E2E8F0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 24px;
+            position: relative;
+        }
+        .loader-progress {
+            position: absolute;
+            height: 100%;
+            width: 50%;
+            background: linear-gradient(90deg, #4f46e5, #10b981);
+            border-radius: 10px;
+            animation: loading 1.5s infinite ease-in-out;
+        }
+        @keyframes loading {
+            0% { left: -50%; }
+            100% { left: 100%; }
         }
     </style>
 
@@ -92,7 +117,24 @@
     </script>
 </head>
 <body class="text-slate-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden">
-    <div id="root"></div>
+    <div id="root">
+        <!-- Modern Splash Screen that will be replaced by React -->
+        <div id="splash-screen">
+            <div class="flex flex-col items-center">
+                <div class="w-20 h-20 bg-indigo-600 rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-indigo-200 animate-pulse-gentle mb-6">
+                    <span class="text-white font-black text-3xl tracking-tighter">KA</span>
+                </div>
+                <div class="text-center">
+                    <h1 class="text-2xl font-black text-slate-800 tracking-tight mb-1">Khan Academy Nusantara</h1>
+                    <p class="text-indigo-500 text-[10px] font-black uppercase tracking-[0.2em] opacity-70">Platform Pintar Pendidikan</p>
+                </div>
+                <div class="loader-bar">
+                    <div class="loader-progress"></div>
+                </div>
+                <p class="mt-8 text-slate-400 text-xs font-bold animate-pulse">Menyiapkan Kurikulum Nusantara...</p>
+            </div>
+        </div>
+    </div>
     <!-- Entry point using Babel to support JSX in index.tsx -->
     <script type="text/babel" data-type="module" src="./index.tsx"></script>
 </body>
